@@ -149,7 +149,7 @@ ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spc
 We can test our Native App on the Provider by mimicking what it would look like on the 
 Consumer side (a benefit/feature of the Snowflake Native App Framework).
 
-To do this, run the commands in `consumer_setup.sql`. This will create the role, 
+To do this, run below SQL commands . This will create the role, 
 virtual warehouse for install, database, schema,  VIEW of the TPC-H data, and 
 permissions necessary to configure the Native App. The ROLE you will use for this is `NAC`.
 
@@ -196,11 +196,6 @@ USE WAREHOUSE wh_nac;
 -- Create the APPLICATION
 DROP APPLICATION IF EXISTS na_spcs_python_app CASCADE;
 CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v2;
-
-
-GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
--- Get the URL for the app
-CALL na_spcs_python_app.app_public.app_url();
 ```
 
 Next we need to configure the Native App. We can do this via Snowsight by
@@ -223,6 +218,13 @@ then visit the URL.
 
 If you need to get the URL via SQL, you can call a stored procedure 
 in the Native App, `app_public.app_url()`.
+
+```sql
+-- ????????????????????????????????????????
+GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+-- Get the URL for the app
+CALL na_spcs_python_app.app_public.app_url();
+```
 
 ##### Cleanup
 To clean up the Native App test install, you can just `DROP` it:
