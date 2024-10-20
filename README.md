@@ -49,12 +49,42 @@ CREATE SECURITY INTEGRATION IF NOT EXISTS snowservices_ingress_oauth
 ```
 
 ### Provider Setup
+
+#### Create Provider Objects
+
 For the Provider, we need to set up only a few things:
 * A STAGE to hold the files for the Native App
 * An IMAGE REPOSITORY to hold the image for the service image
 * An APPLICATION PACKAGE that defines the Native App
 
-As `ACCOUNTADMIN` run the commands in `provider_setup.sql`.
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE ROLE IF NOT EXISTS naspcs_role;
+GRANT ROLE naspcs_role TO ROLE accountadmin;
+
+GRANT CREATE INTEGRATION ON ACCOUNT TO ROLE naspcs_role;
+GRANT CREATE COMPUTE POOL ON ACCOUNT TO ROLE naspcs_role;
+GRANT CREATE WAREHOUSE ON ACCOUNT TO ROLE naspcs_role;
+GRANT CREATE DATABASE ON ACCOUNT TO ROLE naspcs_role;
+GRANT CREATE APPLICATION PACKAGE ON ACCOUNT TO ROLE naspcs_role;
+GRANT CREATE APPLICATION ON ACCOUNT TO ROLE naspcs_role;
+GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE naspcs_role;
+
+GRANT CREATE DATA EXCHANGE LISTING ON ACCOUNT TO ROLE naspcs_role;
+
+CREATE WAREHOUSE IF NOT EXISTS wh_nap WITH WAREHOUSE_SIZE='XSMALL';
+GRANT ALL ON WAREHOUSE wh_nap TO ROLE naspcs_role;
+
+USE ROLE naspcs_role;
+CREATE DATABASE IF NOT EXISTS spcs_app;
+CREATE SCHEMA IF NOT EXISTS spcs_app.napp;
+CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
+CREATE IMAGE REPOSITORY IF NOT EXISTS spcs_app.napp.img_repo;
+SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;
+```
+
+
+#### Create Provider Objects
 
 To enable the setup, we will use some templated files. There 
 is a script to generate the files from the templated files. 
@@ -64,18 +94,23 @@ You will need the following as inputs:
 
 To create the files, run:
 
-```
+```bash
 bash ./configure.sh
 ```
 
 This created a `Makefile` with the necessary repository filled in. Feel free to look
 at the Makefile, but you can also just run:
 
-```
+```bash
 make all
 ```
 
-This will create the 1 container image and push it to the IMAGE REPOSITORY.
+This will create the 2 container images and push it to the IMAGE REPOSITORY.
+
+[!NOTE]
+add checking the IMAGE REPOSITORY list command to test it
+
+#### Create Application Package
 
 Next, you need to upload the files in the `na_spcs_python/v2` directory into the stage 
 `SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python/v2`.
@@ -83,7 +118,17 @@ Next, you need to upload the files in the `na_spcs_python/v2` directory into the
 To create the VERSION for the APPLICATION PACKAGE, run the following commands
 (they are also in `provider_version.sql`):
 
-```
+```sql
+DROP APPLICATION PACKAGE IF EXISTS na_spcs_python_pkg;
+CREATE APPLICATION PACKAGE na_spcs_python_pkg;
+CREATE SCHEMA na_spcs_python_pkg.shared_data;
+CREATE TABLE na_spcs_python_pkg.shared_data.feature_flags(flags VARIANT, acct VARCHAR);
+CREATE SECURE VIEW na_spcs_python_pkg.shared_data.feature_flags_vw AS SELECT * FROM na_spcs_python_pkg.shared_data.feature_flags WHERE acct = current_account();
+GRANT USAGE ON SCHEMA na_spcs_python_pkg.shared_data TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
+GRANT SELECT ON VIEW na_spcs_python_pkg.shared_data.feature_flags_vw TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
+INSERT INTO na_spcs_python_pkg.shared_data.feature_flags SELECT parse_json('{"debug": ["GET_SERVICE_STATUS", "GET_SERVICE_LOGS", "LIST_LOGS", "TAIL_LOG"]}') AS flags, current_account() AS acct;
+GRANT USAGE ON SCHEMA na_spcs_python_pkg.shared_data TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
+
 USE ROLE naspcs_role;
 -- for the first version of a VERSION
 ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
@@ -92,7 +137,7 @@ ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp
 If you need to iterate, you can create a new PATCH for the version by running this
 instead:
 
-```
+```sql
 USE ROLE naspcs_role;
 -- for subsequent updates to version
 ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
@@ -108,10 +153,55 @@ To do this, run the commands in `consumer_setup.sql`. This will create the role,
 virtual warehouse for install, database, schema,  VIEW of the TPC-H data, and 
 permissions necessary to configure the Native App. The ROLE you will use for this is `NAC`.
 
+```sql
+USE ROLE ACCOUNTADMIN;
+-- (Mock) Consumer role
+CREATE ROLE IF NOT EXISTS nac;
+GRANT ROLE nac TO ROLE ACCOUNTADMIN;
+CREATE WAREHOUSE IF NOT EXISTS wh_nac WITH WAREHOUSE_SIZE='XSMALL';
+GRANT USAGE ON WAREHOUSE wh_nac TO ROLE nac WITH GRANT OPTION;
+GRANT IMPORTED PRIVILEGES ON DATABASE snowflake_sample_data TO ROLE nac;
+GRANT CREATE DATABASE ON ACCOUNT TO ROLE nac;
+GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE nac WITH GRANT OPTION;
+GRANT CREATE COMPUTE POOL ON ACCOUNT TO ROLE nac;
+
+USE ROLE nac;
+CREATE DATABASE IF NOT EXISTS nac_test;
+CREATE SCHEMA IF NOT EXISTS nac_test.data;
+USE SCHEMA nac_test.data;
+CREATE VIEW IF NOT EXISTS orders AS SELECT * FROM snowflake_sample_data.tpch_sf10.orders;
+```
+
+
+
 #### Testing on the Provider Side
 First, let's install the Native App.
 
-Run the commands in `provider_test.sql`.
+```sql
+-- For Provider-side Testing
+USE ROLE naspcs_role;
+GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_python_pkg TO ROLE nac;
+USE ROLE ACCOUNTADMIN;
+GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
+
+USE ROLE naspcs_role;
+-- for the first version of a VERSION
+ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
+
+
+-- FOLLOW THE consumer_setup.sql TO SET UP THE TEST ON THE PROVIDER
+USE ROLE nac;
+USE WAREHOUSE wh_nac;
+
+-- Create the APPLICATION
+DROP APPLICATION IF EXISTS na_spcs_python_app CASCADE;
+CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v2;
+
+
+GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+-- Get the URL for the app
+CALL na_spcs_python_app.app_public.app_url();
+```
 
 Next we need to configure the Native App. We can do this via Snowsight by
 visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
