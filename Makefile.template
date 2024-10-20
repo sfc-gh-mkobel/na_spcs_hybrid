@@ -2,14 +2,28 @@ SNOWFLAKE_REPO?=<<repository_url>>
 BACKEND_IMAGE=eap_backend
 FRONTEND_IMAGE=eap_frontend
 ROUTER_IMAGE=eap_router
+IMAGE_REGISTREY_HOSTNAME?=<<image_registrey_hostname>>
+SS_DB=SPCS_APP
+SS_SCHEMA=NAPP
+SS_STAGE=APP_STAGE
+ROLE=naspcs_role
 
 help:            ## Show this help.
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 all: login build push
 
-login:           ## Login to Snowflake Docker repo
-	docker login $(SNOWFLAKE_REPO)
+#login:           ## Login to Snowflake Docker repo
+#	docker login $(SNOWFLAKE_REPO)
+
+login:
+	snow spcs image-registry token --format=JSON | docker login $(IMAGE_REGISTREY_HOSTNAME) -u 0sessiontoken --password-stdin
+
+upload_app_files: ## upload yaml to stage $(SS_STAGE)
+	snow stage copy --role $(ROLE) na_spcs_python/v2/ @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)/na_spcs_python/v2/
+
+list_stage_file:
+	snow stage list-files --role $(ROLE) @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)
 
 build: build_backend build_frontend build_router  ## Build Docker images for Snowpark Container Services
 
