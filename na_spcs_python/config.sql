@@ -91,7 +91,7 @@ CREATE OR REPLACE PROCEDURE config.version_initializer()
         RAISE;
     END;
     $$;
-    GRANT USAGE ON PROCEDURE config.version_initializer(STRING) TO APPLICATION ROLE app_admin;
+    GRANT USAGE ON PROCEDURE config.version_initializer() TO APPLICATION ROLE app_admin;
 
 -- Prefix to use for all global objects created (e.g., COMPUTE POOLS, WAREHOUSES, etc)
 CREATE OR REPLACE FUNCTION config.app_prefix(root STRING)
@@ -99,7 +99,7 @@ CREATE OR REPLACE FUNCTION config.app_prefix(root STRING)
     AS $$
     UPPER(current_database() || '__' || root)
     $$;
-    GRANT USAGE ON PROCEDURE config.app_prefix(STRING) TO APPLICATION ROLE app_admin;
+    GRANT USAGE ON FUNCTION config.app_prefix(STRING) TO APPLICATION ROLE app_admin;
 
 CREATE OR REPLACE PROCEDURE config.compute_pool_exists(name STRING)
     RETURNS boolean
@@ -210,7 +210,7 @@ CREATE OR REPLACE PROCEDURE config.permissions_and_references(perms ARRAY, refs 
         RETURN true;
     END
     $$;
-    GRANT USAGE ON PROCEDURE config.permissions_and_references() TO APPLICATION ROLE app_admin;
+    GRANT USAGE ON PROCEDURE config.permissions_and_references(ARRAY,ARRAY) TO APPLICATION ROLE app_admin;
 
 CREATE OR REPLACE PROCEDURE config.create_all_compute_pools()
     RETURNS boolean

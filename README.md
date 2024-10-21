@@ -116,9 +116,10 @@ Next, you need to upload the files in the `na_spcs_python` directory into the st
 `SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python`.
 
 To create the VERSION for the APPLICATION PACKAGE, run the following commands
-(they are also in `provider_version.sql`):
 
 ```sql
+USE ROLE naspcs_role;
+USE WAREHOUSE wh_nap;
 DROP APPLICATION PACKAGE IF EXISTS na_spcs_python_pkg;
 CREATE APPLICATION PACKAGE na_spcs_python_pkg;
 CREATE SCHEMA na_spcs_python_pkg.shared_data;
@@ -185,8 +186,6 @@ USE ROLE ACCOUNTADMIN;
 GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
 
 USE ROLE naspcs_role;
--- for the first version of a VERSION
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
 
 
 -- FOLLOW THE consumer_setup.sql TO SET UP THE TEST ON THE PROVIDER
