@@ -20,7 +20,7 @@ login:
 	snow spcs image-registry token --format=JSON | docker login $(IMAGE_REGISTREY_HOSTNAME) -u 0sessiontoken --password-stdin
 
 upload_app_files: ## upload yaml to stage $(SS_STAGE)
-	snow stage copy --role $(ROLE) na_spcs_python/v2/ @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)/na_spcs_python/v2/
+	snow stage copy --role $(ROLE) na_spcs_python/ @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)/na_spcs_python/
 
 list_stage_file:
 	snow stage list-files --role $(ROLE) @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)
