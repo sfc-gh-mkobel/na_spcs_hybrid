@@ -112,8 +112,8 @@ add checking the IMAGE REPOSITORY list command to test it
 
 #### Create Application Package
 
-Next, you need to upload the files in the `na_spcs_python/v2` directory into the stage 
-`SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python/v2`.
+Next, you need to upload the files in the `na_spcs_python` directory into the stage 
+`SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python`.
 
 To create the VERSION for the APPLICATION PACKAGE, run the following commands
 (they are also in `provider_version.sql`):
@@ -131,7 +131,7 @@ GRANT USAGE ON SCHEMA na_spcs_python_pkg.shared_data TO SHARE IN APPLICATION PAC
 
 USE ROLE naspcs_role;
 -- for the first version of a VERSION
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
+ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
 ```
 
 If you need to iterate, you can create a new PATCH for the version by running this
@@ -140,7 +140,7 @@ instead:
 ```sql
 USE ROLE naspcs_role;
 -- for subsequent updates to version
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
+ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
 ```
 
 ### Testing on the Provider Side
@@ -186,7 +186,7 @@ GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
 
 USE ROLE naspcs_role;
 -- for the first version of a VERSION
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python/v2;
+ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
 
 
 -- FOLLOW THE consumer_setup.sql TO SET UP THE TEST ON THE PROVIDER
