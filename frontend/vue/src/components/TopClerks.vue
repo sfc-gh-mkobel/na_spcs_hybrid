@@ -86,20 +86,23 @@
               <thead>
                 <tr>
                   <th class="text-left">
-                    O_CLERK
+                    TICKER
                   </th>
                   <th class="text-left">
-                    CLERK_TOTAL
+                    DATE
+                  </th>
+                  <th class="text-left">
+                    LAST_PRICE
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="item in clerk_data"
-                  :key="item.O_CLERK"
                 >
-                  <td>{{ item.O_CLERK }}</td>
-                  <td>{{ item.CLERK_TOTAL }}</td>
+                  <td>{{ item.TICKER }}</td>
+                  <td>{{ item.DATE }}</td>
+                  <td>{{ item.LAST_PRICE }}</td>
                 </tr>
               </tbody>
             </template>
@@ -139,7 +142,7 @@ export default {
   methods: {
     get_data() {
       const baseUrl = process.env.VUE_APP_API_URL
-      axios.get(baseUrl + "/top_clerks", 
+      axios.get(baseUrl + "/ticks", 
                 {params: {start_range: this.begin, end_range: this.end, topn: this.topn}})
         .then(r => {
           this.clerk_data = r.data

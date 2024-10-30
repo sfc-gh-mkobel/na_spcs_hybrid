@@ -900,3 +900,5 @@ CREATE OR REPLACE PROCEDURE config.upgrade_service_backend()
     END
     $$;
     GRANT USAGE ON PROCEDURE config.upgrade_service_backend() TO APPLICATION ROLE app_admin;
+
+  

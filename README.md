@@ -1,56 +1,62 @@
-# Example Native App with Snowpark Conatiner Services
-This is a simple Native App that uses Snowpark Container
-Services to deploy a frontend application. It queries the 
-TPC-H 100 data set and returns the top sales clerks. The 
-frontend provides date pickers to restrict the range of the sales
-data and a slider to determine how many top clerks to display.
-The data is presented in a table sorted by highest seller
-to lowest. This example uses a Vue-based JavaScript frontend, 
-a Flask-based Python middle tier, and nginx as a router.
+# Example Native App with Snowpark Container Services
+This is a simple Snowflake Native App that uses Snowpark Container Services to deploy a frontend application. The application will share the Factset [Tick History](https://app.snowflake.com/marketplace/listing/GZT0ZGCQ51UL/factset-tick-history?search=factset) dataset available from the Snowflake Marketplace. The users of the application will then share with the application the tickers in which they are interested via a Snowflake Hybrid table and the application will show a graph of the historical performance of that ticker. This example uses a Vue-based JavaScript frontend, a Flask-based Python middle tier, and nginx as a router.
 
 
 ## Prerequisite
-### Snowflake Sample Data
-Provider and consumer accounts should have access to SNOWFLAKE_SAMPLE_DATA
-The sample database is created by default for newer accounts. If the database has not been created for your account and you want access to it, execute the following SQL statements with the ACCOUNTADMIN role active:
 
-```sql
--- Create a database from the share.
-CREATE DATABASE SNOWFLAKE_SAMPLE_DATA FROM SHARE SFC_SAMPLES.SAMPLE_DATA;
+Snowflake trial account.
 
--- Grant the PUBLIC role access to the database.
--- Optionally change the role name to restrict access to a subset of users.
-GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE_SAMPLE_DATA TO ROLE PUBLIC;
-```
-
+## What you will need
 ### Snowflake CLI
-This is needed only if the provide account is using MFA. 
-Not sure if needed????
-
 You should have Snowflake CLI installed on your local machine.
 https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation
-Make sure the default account is the provider account.
 
+#### Authorisation
+Once the Snowflake CLI is installed you will need to provide connection information for your Snowflake account through a config.toml file.  Instructions can be found [here](https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-cli) and [here](https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-connections)
 
+The Snowflake CLI helps to automate lots of features within Snowflake.  Today we are using it for Native Apps but it can also be used for Streamlit, Notebooks, Git etc.
 
+### Docker
+This Quickstart uses Docker to deploy the container images you build locally to your Snowflake account.  Docker can be installed from [here](https://www.docker.com/products/docker-desktop/)
+
+### Factset Dataset
+The application will be sharing this dataset with the users of the application.  Although it is never exposed directly, the application uses it when drawing historical graphs for ticker symbols.
+* Go to Snowsight
+* Data Products / Marketplace in the left hand column
+* Locate the Dataset [Tick History (Free)](https://app.snowflake.com/marketplace/listing/GZT0ZGCQ51UL/factset-tick-history?search=factset)
+* Click on it
+* Click Get and follow the instructions
+
+Before installing the dataset have a read of the descriptions of the dataset content on the site.  Because this is a free dataset the count of symbols and the date range of the data is curtailed
+
+When installing the dataset leave all of the defaults the same. This means the data will be installed in a database name Tick_History.  
+Going into a worksheet inside Snowsight and looking at the available data you will see
+* Database = Tick_History
+* Schema = Public
+* Table = TH_SF_MKTPLACE
+
+The datset has over 31 billion rows.
+
+This table is going to be the one that is shared with our application.  The most important attributes for us in this dataset are TICKER, DATE and 
+Feel free to explore the dataset before moving on.  The query we use to select the data for sharing is crude but illustrates what we want. 
+  
+
+## What you will learn
+In this quikstart you will learn how to use the Snowflake Native Apps framework along with Snowpark Containers services to build and deploy an application.  You will also learn how the Snowflake CLI can help automate the build and deployment of your application
+
+## What you will build
+A Snowflake Native App with Snowpark Container Services
 
 ## Setup
-There are 2 parts to set up, the Provider and the Consumer.
+In a Snowflake Native App there are two parties.  The builder of the application, often called the Provider in our literature, and the user of the application, often called the consumer in our literature.  In this particular Quickstart you will play both roles as you only have one account.  In a real-world scenario you would share your application via the Snowflake Marketplace.
 
-This example expects that both Provider and Consumer have been
-set up with the prerequisite steps to enable for Snowpark 
-Container Services, specifically:
-```
-USE ROLE ACCOUNTADMIN;
-CREATE SECURITY INTEGRATION IF NOT EXISTS snowservices_ingress_oauth
-  TYPE=oauth
-  OAUTH_CLIENT=snowservices_ingress
-  ENABLED=true;
-```
-
+/--- This will be done using snow app run (Meny)
 ### Provider Setup
 
 #### Create Provider Objects
+[!NOTE] KEEP
+#### Clone Repository
+You will need to clone the following [repository]().  You can also choose to download the repository as a zip file and unzip it onto your laptop.
 
 For the Provider, we need to set up only a few things:
 * A STAGE to hold the files for the Native App
@@ -82,33 +88,39 @@ CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
 CREATE IMAGE REPOSITORY IF NOT EXISTS spcs_app.napp.img_repo;
 SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;
 ```
-
+/--- This will be done using snow app run (Meny) -----/
 
 #### Create Provider Objects
 
-To enable the setup, we will use some templated files. There 
-is a script to generate the files from the templated files. 
-You will need the following as inputs:
+The application now needs to be built.  The first this we need is the creation of the container images and the deployment of them to your Snowflake account is all done 
 * The full name of the image repository. You can get this by running 
    `SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;`, and getting the `repository_url`.
 
-To create the files, run:
+Once you have the repository url then you can run the following from a terminal.  You will be prompted to enter the url now.
 
 ```bash
 bash ./configure.sh
 ```
 
-This created a `Makefile` with the necessary repository filled in. Feel free to look
-at the Makefile, but you can also just run:
+This created a `Makefile` with the necessary repository filled in. Feel free to look at the Makefile, but you can also just run:
 
 ```bash
 make all
 ```
-
 This will create the 2 container images and push it to the IMAGE REPOSITORY.
 
-[!NOTE]
-add checking the IMAGE REPOSITORY list command to test it
+[!NOTE] KEEP
+Your images have been built locally and deployed to your Snowflake account.  If you want to check that they are there you can head back over to Snowsight and execute (fill in your values)
+[!NOTE] KEEP
+```sql
+SHOW IMAGE REPOSITORIES IN ACCOUNT;
+```
+[!NOTE] KEEP
+You can then grab the database name, the schema name and the repository name and then execute
+[!NOTE] KEEP
+```sql
+SHOW IMAGES IN IMAGE REPOSITORY  <db>.<schema>.<repo>;
+```
 
 #### Create Application Package
 
@@ -144,15 +156,19 @@ USE ROLE naspcs_role;
 ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
 ```
 
-### Testing on the Provider Side
+### Testing on the Provider/Consumer Side
 
 #### Setup for Testing on the Provider Side
-We can test our Native App on the Provider by mimicking what it would look like on the 
-Consumer side (a benefit/feature of the Snowflake Native App Framework).
+We can test our Native App on the Provider by mimicking what it would look like on the Consumer side (a benefit/feature of the Snowflake Native App Framework).  This is really helpful when debugging your application and when you only have one account with which to work.
 
-To do this, run below SQL commands . This will create the role, 
-virtual warehouse for install, database, schema,  VIEW of the TPC-H data, and 
-permissions necessary to configure the Native App. The ROLE you will use for this is `NAC`.
+To do this, run below SQL commands . This will 
+
+* create a role 
+* virtual warehouse for install
+* database
+* schema
+* A Hybrid Table which will store your portfolio (includes sample INSERT too)
+* Permissions necessary to configure the Native App (Granted to the `NAC` role)
 
 ```sql
 USE ROLE ACCOUNTADMIN;
@@ -161,7 +177,6 @@ CREATE ROLE IF NOT EXISTS nac;
 GRANT ROLE nac TO ROLE ACCOUNTADMIN;
 CREATE WAREHOUSE IF NOT EXISTS wh_nac WITH WAREHOUSE_SIZE='XSMALL';
 GRANT USAGE ON WAREHOUSE wh_nac TO ROLE nac WITH GRANT OPTION;
-GRANT IMPORTED PRIVILEGES ON DATABASE snowflake_sample_data TO ROLE nac;
 GRANT CREATE DATABASE ON ACCOUNT TO ROLE nac;
 GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE nac WITH GRANT OPTION;
 GRANT CREATE COMPUTE POOL ON ACCOUNT TO ROLE nac;
@@ -170,7 +185,7 @@ USE ROLE nac;
 CREATE DATABASE IF NOT EXISTS nac_test;
 CREATE SCHEMA IF NOT EXISTS nac_test.data;
 USE SCHEMA nac_test.data;
-CREATE VIEW IF NOT EXISTS orders AS SELECT * FROM snowflake_sample_data.tpch_sf10.orders;
+CREATE HYBRID TABLE <insert name here>(UserID INTEGER NOT NULL, TickerID INTEGER NOT NULL, CONSTRAINT pk_UserID_TickerID PRIMARY KEY (UserID, TickerID));
 ```
 
 
@@ -194,18 +209,21 @@ USE WAREHOUSE wh_nac;
 
 -- Create the APPLICATION
 DROP APPLICATION IF EXISTS na_spcs_python_app CASCADE;
-CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v2;
+
+--this should be done by snow app run
+CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v1;
 ```
 
-Next we need to configure the Native App. We can do this via Snowsight by
-visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
+In Snowsight head over to Data Products / Apps in the left hand sidebar.
+The application you have just installed should be the only one there.  If it isn't then locate the NA_SPCS_PYTHON_APP applcation you have just created
+
 * Click the "Grant" button to grant the necessary privileges
 * Click the "Review" button to open the dialog to create the
   necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
   click "Connect".
 
-At this point, you should now see an "Activate" button in the top right.
-Click it to activate the app.
+At this point, you should now see an "Activate" button in the top right. Click it to activate the app.
+Behind the scenes Snowflake is setting up your services as well as the compute pools needed by the application so this may yake a few minutes.
 
 Once it has successfully activated, the "Activate" button will be replaced
 with a "Launch app" button. Click the "Launch app" button to open the

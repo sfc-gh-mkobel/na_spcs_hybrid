@@ -34,3 +34,26 @@ def top_clerks():
         return make_response(jsonify([x.as_dict() for x in df.to_local_iterator()]))
     except:
         abort(500, "Error reading from Snowflake. Check the logs for details.")
+
+@snowpark.route('/ticks')
+def ticks():
+    # Validate arguments
+    sdt_str = request.args.get('start_range') or '1995-01-01'
+    edt_str = request.args.get('end_range') or '1995-03-31'
+    topn_str = request.args.get('topn') or '10'
+    try:
+        sdt = datetime.datetime.strptime(sdt_str, dateformat)
+        edt = datetime.datetime.strptime(edt_str, dateformat)
+        topn = int(topn_str)
+    except:
+        abort(400, "Invalid arguments.")
+    try:
+        dfRef = session.sql("SELECT * FROM REFERENCE('TICKER_TABLE')")
+        dfShared = session.sql("SELECT TICKER, DATE, LAST_PRICE FROM app_public.ticker_data")
+        dfReturn = dfShared \
+                .join(dfRef, "ticker") \
+                .select(dfShared.TICKER, dfShared.DATE, dfShared.LAST_PRICE) \
+                .limit(topn)
+        return make_response(jsonify([x.as_dict() for x in dfReturn.to_local_iterator()]))
+    except:
+        abort(500, "Made a mess of the statement. Check the logs for details.")

@@ -1,8 +1,8 @@
-SNOWFLAKE_REPO?=<<repository_url>>
+SNOWFLAKE_REPO?=sfsenorthamerica-amitchell-summit-demo.registry.snowflakecomputing.com/spcs_app/napp/img_repo
 BACKEND_IMAGE=eap_backend
 FRONTEND_IMAGE=eap_frontend
 ROUTER_IMAGE=eap_router
-IMAGE_REGISTREY_HOSTNAME?=<<image_registrey_hostname>>
+IMAGE_REGISTREY_HOSTNAME?=sfsenorthamerica-amitchell-summit-demo.registry.snowflakecomputing.com
 SS_DB=SPCS_APP
 SS_SCHEMA=NAPP
 SS_STAGE=APP_STAGE
@@ -17,13 +17,13 @@ all: login build push upload_app_files
 #	docker login $(SNOWFLAKE_REPO)
 
 login:
-	snow spcs image-registry token --format=JSON | docker login $(IMAGE_REGISTREY_HOSTNAME) -u 0sessiontoken --password-stdin
+	snow spcs image-registry token --connection prod3 --format=JSON | docker login $(IMAGE_REGISTREY_HOSTNAME) -u 0sessiontoken --password-stdin
 
 upload_app_files: ## upload yaml to stage $(SS_STAGE)
-	snow stage copy --role $(ROLE) --overwrite na_spcs_python/ @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)/na_spcs_python/
+	snow stage copy --role $(ROLE) --connection prod3 --overwrite na_spcs_python/ @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)/na_spcs_python/
 
 list_stage_file:
-	snow stage list-files --role $(ROLE) @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)
+	snow stage list-files --connection prod3 --role $(ROLE) @$(SS_DB).$(SS_SCHEMA).$(SS_STAGE)
 
 build: build_backend build_frontend build_router  ## Build Docker images for Snowpark Container Services
 
