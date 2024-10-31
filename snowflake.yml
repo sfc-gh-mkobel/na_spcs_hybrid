@@ -1,0 +1,24 @@
+definition_version: 2
+entities:
+  pkg:
+    type: application package
+    identifier: na_spcs_pkg
+    stage: app_src.stage
+    manifest: na_spcs_python/manifest.yml
+    artifacts:
+      - src: na_spcs_python/*
+        dest: ./
+    meta:
+      role: naspcs_role
+      warehouse: wh_nap
+      post_deploy:
+        - sql_script: scripts/shared-content.sql
+  app:
+    type: application
+    identifier: na_spcs_app
+    from:
+      target: pkg
+    debug: true
+    meta:
+      role: naspcs_role
+      warehouse: wh_nap

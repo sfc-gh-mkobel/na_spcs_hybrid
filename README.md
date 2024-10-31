@@ -29,31 +29,24 @@ Not sure if needed????
 
 You should have Snowflake CLI installed on your local machine.
 https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation
+Make sure you are using the latest version of Snowflake CLI if you already have it installed on your local machine.
+https://docs.snowflake.com/en/release-notes/clients-drivers/snowflake-cli
 Make sure the default account is the provider account.
 
+### Docker
+Docker Desktop installed on your local machine
+https://www.docker.com/products/docker-desktop/?_fsi=Fv7QhES9&_fsi=Fv7QhES9
 
 
 
 ## Setup
 There are 2 parts to set up, the Provider and the Consumer.
 
-This example expects that both Provider and Consumer have been
-set up with the prerequisite steps to enable for Snowpark 
-Container Services, specifically:
-```
-USE ROLE ACCOUNTADMIN;
-CREATE SECURITY INTEGRATION IF NOT EXISTS snowservices_ingress_oauth
-  TYPE=oauth
-  OAUTH_CLIENT=snowservices_ingress
-  ENABLED=true;
-```
-
 ### Provider Setup
 
 #### Create Provider Objects
 
 For the Provider, we need to set up only a few things:
-* A STAGE to hold the files for the Native App
 * An IMAGE REPOSITORY to hold the image for the service image
 * An APPLICATION PACKAGE that defines the Native App
 
@@ -78,7 +71,6 @@ GRANT ALL ON WAREHOUSE wh_nap TO ROLE naspcs_role;
 USE ROLE naspcs_role;
 CREATE DATABASE IF NOT EXISTS spcs_app;
 CREATE SCHEMA IF NOT EXISTS spcs_app.napp;
-CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
 CREATE IMAGE REPOSITORY IF NOT EXISTS spcs_app.napp.img_repo;
 SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;
 ```
@@ -110,41 +102,28 @@ This will create the 2 container images and push it to the IMAGE REPOSITORY.
 [!NOTE]
 add checking the IMAGE REPOSITORY list command to test it
 
-#### Create Application Package
 
-Next, you need to upload the files in the `na_spcs_python` directory into the stage 
-`SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python`.
+#### Create Application Package Using Snow CLI
 
-To create the VERSION for the APPLICATION PACKAGE, run the following commands
+#### Create Application Package 
 
-```sql
-USE ROLE naspcs_role;
-USE WAREHOUSE wh_nap;
-DROP APPLICATION PACKAGE IF EXISTS na_spcs_python_pkg;
-CREATE APPLICATION PACKAGE na_spcs_python_pkg;
-CREATE SCHEMA na_spcs_python_pkg.shared_data;
-CREATE TABLE na_spcs_python_pkg.shared_data.feature_flags(flags VARIANT, acct VARCHAR);
-CREATE SECURE VIEW na_spcs_python_pkg.shared_data.feature_flags_vw AS SELECT * FROM na_spcs_python_pkg.shared_data.feature_flags WHERE acct = current_account();
-GRANT USAGE ON SCHEMA na_spcs_python_pkg.shared_data TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
-GRANT SELECT ON VIEW na_spcs_python_pkg.shared_data.feature_flags_vw TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
-INSERT INTO na_spcs_python_pkg.shared_data.feature_flags SELECT parse_json('{"debug": ["GET_SERVICE_STATUS", "GET_SERVICE_LOGS", "LIST_LOGS", "TAIL_LOG"]}') AS flags, current_account() AS acct;
-GRANT USAGE ON SCHEMA na_spcs_python_pkg.shared_data TO SHARE IN APPLICATION PACKAGE na_spcs_python_pkg;
 
-USE ROLE naspcs_role;
--- for the first version of a VERSION
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
+To create an application package and create a version for it, execute the following make command:
+
+```bash
+make snow_create
 ```
 
-If you need to iterate, you can create a new PATCH for the version by running this
-instead:
-
-```sql
-USE ROLE naspcs_role;
--- for subsequent updates to version
-ALTER APPLICATION PACKAGE na_spcs_python_pkg ADD PATCH FOR VERSION v2 USING @spcs_app.napp.app_stage/na_spcs_python;
+Occasionally, you might want to validate a setup script before deploying an application to avoid potential impacts that could occur if validation fails during the deployment process. The snow app validate command validates a setup script without needing to run or deploy an application. It uploads source files to a separate scratch stage that drops automatically after the command completes to avoid disturbing files in the application’s source stage.
+```bash
+make snow_validate
 ```
 
-### Testing on the Provider Side
+<!-- To create an application using a version (and patch) of an existing application package, execute the following make command:
+
+```bash
+make snow_app_run
+``` -->
 
 #### Setup for Testing on the Provider Side
 We can test our Native App on the Provider by mimicking what it would look like on the 
@@ -174,14 +153,13 @@ CREATE VIEW IF NOT EXISTS orders AS SELECT * FROM snowflake_sample_data.tpch_sf1
 ```
 
 
-
 #### Testing on the Provider Side
 First, let's install the Native App.
 
 ```sql
 -- For Provider-side Testing
 USE ROLE naspcs_role;
-GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_python_pkg TO ROLE nac;
+GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_pkg TO ROLE nac;
 USE ROLE ACCOUNTADMIN;
 GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
 
@@ -193,12 +171,16 @@ USE ROLE nac;
 USE WAREHOUSE wh_nac;
 
 -- Create the APPLICATION
-DROP APPLICATION IF EXISTS na_spcs_python_app CASCADE;
-CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v2;
+DROP APPLICATION IF EXISTS na_spcs_app CASCADE;
+CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSION v1;
 ```
 
 Next we need to configure the Native App. We can do this via Snowsight by
-visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
+visiting the Apps tab.
+![Data Apps](img/data-apps.png)
+
+* Click on our Native App `NA_SPCS_APP`.
+* Select warehouse "WH_NAC" to proceed
 * Click the "Grant" button to grant the necessary privileges
 * Click the "Review" button to open the dialog to create the
   necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
@@ -220,33 +202,27 @@ in the Native App, `app_public.app_url()`.
 
 ```sql
 -- ????????????????????????????????????????
-GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+GRANT APPLICATION ROLE na_spcs_app.app_user TO ROLE sandbox;
 -- Get the URL for the app
-CALL na_spcs_python_app.app_public.app_url();
+CALL na_spcs_app.app_public.app_url();
 ```
-
-##### Cleanup
-To clean up the Native App test install, you can just `DROP` it:
-
-```
-DROP APPLICATION na_spcs_python_app CASCADE;
-```
-The `CASCADE` will also drop the `WAREHOUSE` and `COMPUTE POOL` that the
-Application created, along with the `EXTERNAL ACCESS INTEGRATION` that 
-the Application prompted the Consumer to create.
 
 ### Publishing/Sharing your Native App
 You Native App is now ready on the Provider Side. You can make the Native App available
 for installation in other Snowflake Accounts by setting a default PATCH and Sharing the App
 in the Snowsight UI.
 
-Navigate to the "Apps" tab and select "Packages" at the top. Now click on your App Package 
-(`NA_SPCS_PYTHON_PKG`). From here you can click on "Set release default" and choose the latest patch
-(the largest number) for version `v2`. 
+Navigate to the "Apps Packages" tab and select "Packages" at the top. 
 
-Next, click "Share app package". This will take you to the Provider Studio. Give the listing
-a title, choose "Only Specified Consumers", and click "Next". For "What's in the listing?", 
-select the App Package (`NA_SPCS_PYTHON_PKG`). Add a brief description. Lastly, add the Consumer account
+![App Packages](img/app-packages.png)
+
+
+Now click on your App Package 
+(`NA_SPCS_PKG`). From here you can click on "Set release default" and choose the latest patch
+(the largest number) for version `v1` and click "Save". 
+
+Next, click "Publish app package". This will take you to the Provider Studio. Give the listing a title, choose "Only Specified Consumers", and click "Next". For "What's in the listing?", 
+select the App Package (`NA_SPCS_PKG`). Add a brief description. Lastly, add the Consumer account
 identifier to the "Add consumer accounts". Then click "Publish".
 
 ### Using the Native App on the Consumer Side
@@ -260,11 +236,11 @@ virtual warehouse for the Native App. The ROLE you will use for this is `NAC`.
 #### Using the Native App on the Consumer
 To get the Native app, navigate to the "Apps" sidebar. You should see the app at the top under
 "Recently Shared with You". Click the "Get" button. Select a Warehouse to use for installation.
-Under "Application name", choose the name `NA_SPCS_PYTHON_APP` (You _can_ choose a 
-different name, but the scripts use `NA_SPCS_PYTHON_APP`). Click "Get".
+Under "Application name", choose the name `NA_SPCS_APP` (You _can_ choose a 
+different name, but the scripts use `NA_SPCS_APP`). Click "Get".
 
 Next we need to configure the Native App. We can do this via Snowsight by
-visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
+visiting the Apps tab and clicking on our Native App `NA_SPCS_APP`.
 * Click the "Grant" button to grant the necessary privileges
 * Click the "Review" button to open the dialog to create the
   necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
@@ -295,7 +271,7 @@ role and are in the `app_public` schema:
 * `GET_SERVICE_LOGS()` which takes the same arguments and returns the same information as `SYSTEM$GET_SERVICE_LOGS()`
 
 The permissions to debug are managed on the Provider in the 
-`NA_SPCS_PYTHON_PKG.SHARED_DATA.FEATURE_FLAGS` table. 
+`NA_SPCS_PKG.SHARED_DATA.FEATURE_FLAGS` table. 
 It has a very simple schema:
 * `acct` - the Snowflake account to enable. This should be set to the value of `SELECT current_account()` in that account.
 * `flags` - a VARIANT object. For debugging, the object should have a field named `debug` which is an 
@@ -307,7 +283,7 @@ An example of how to enable logging for a particular account (for example, accou
 `ABC12345`) to give them all the debugging permissions would be
 
 ```
-INSERT INTO na_spcs_python_pkg.shared_data.feature_flags 
+INSERT INTO NA_SPCS_PKG.shared_data.feature_flags 
   SELECT parse_json('{"debug": ["GET_SERVICE_STATUS", "GET_SERVICE_LOGS"]}') AS flags, 
          'ABC12345' AS acct;
 ```
@@ -315,7 +291,7 @@ INSERT INTO na_spcs_python_pkg.shared_data.feature_flags
 To enable on the Provider account for use while developing on the Provider side, you could run
 
 ```
-INSERT INTO na_spcs_python_pkg.shared_data.feature_flags 
+INSERT INTO NA_SPCS_PKG.shared_data.feature_flags 
   SELECT parse_json('{"debug": ["GET_SERVICE_STATUS", "GET_SERVICE_LOGS"]}') AS flags,
          current_account() AS acct;
 ```
