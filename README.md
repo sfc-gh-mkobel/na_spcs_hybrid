@@ -301,7 +301,7 @@ CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSIO
 
 Next we need to configure the Native App. We can do this via Snowsight by
 visiting the Apps tab and clicking on our Native App `NA_SPCS_APP`.
-![data apps](img/data-apps.png)
+![Data Apps](img/data-apps.png)
 
 
 * Click the "Grant" button to grant the necessary privileges
