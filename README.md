@@ -198,9 +198,9 @@ in the Native App, `app_public.app_url()`.
 
 ```sql
 -- ????????????????????????????????????????
-GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+GRANT APPLICATION ROLE na_spcs_app.app_user TO ROLE sandbox;
 -- Get the URL for the app
-CALL na_spcs_python_app.app_public.app_url();
+CALL na_spcs_app.app_public.app_url();
 ```
 
 
@@ -325,16 +325,16 @@ in the Native App, `app_public.app_url()`.
 
 ```sql
 -- ????????????????????????????????????????
-GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+GRANT APPLICATION ROLE na_spcs_app.app_user TO ROLE sandbox;
 -- Get the URL for the app
-CALL na_spcs_python_app.app_public.app_url();
+CALL na_spcs_app.app_public.app_url();
 ```
 
 ##### Cleanup
 To clean up the Native App test install, you can just `DROP` it:
 
 ```
-DROP APPLICATION na_spcs_python_app CASCADE;
+DROP APPLICATION na_spcs_app CASCADE;
 ```
 The `CASCADE` will also drop the `WAREHOUSE` and `COMPUTE POOL` that the
 Application created, along with the `EXTERNAL ACCESS INTEGRATION` that 
@@ -365,11 +365,11 @@ virtual warehouse for the Native App. The ROLE you will use for this is `NAC`.
 #### Using the Native App on the Consumer
 To get the Native app, navigate to the "Apps" sidebar. You should see the app at the top under
 "Recently Shared with You". Click the "Get" button. Select a Warehouse to use for installation.
-Under "Application name", choose the name `NA_SPCS_PYTHON_APP` (You _can_ choose a 
-different name, but the scripts use `NA_SPCS_PYTHON_APP`). Click "Get".
+Under "Application name", choose the name `NA_SPCS_APP` (You _can_ choose a 
+different name, but the scripts use `NA_SPCS_APP`). Click "Get".
 
 Next we need to configure the Native App. We can do this via Snowsight by
-visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
+visiting the Apps tab and clicking on our Native App `NA_SPCS_APP`.
 * Click the "Grant" button to grant the necessary privileges
 * Click the "Review" button to open the dialog to create the
   necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
