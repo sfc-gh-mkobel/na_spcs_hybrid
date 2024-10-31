@@ -29,7 +29,10 @@ Not sure if needed????
 
 You should have Snowflake CLI installed on your local machine.
 https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation
+Make sure you are using the latest version of Snowflake CLI if you already have it installed on your local machine.
+https://docs.snowflake.com/en/release-notes/clients-drivers/snowflake-cli
 Make sure the default account is the provider account.
+
 
 
 
@@ -78,7 +81,7 @@ GRANT ALL ON WAREHOUSE wh_nap TO ROLE naspcs_role;
 USE ROLE naspcs_role;
 CREATE DATABASE IF NOT EXISTS spcs_app;
 CREATE SCHEMA IF NOT EXISTS spcs_app.napp;
-CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
+-- CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
 CREATE IMAGE REPOSITORY IF NOT EXISTS spcs_app.napp.img_repo;
 SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;
 ```
@@ -110,7 +113,117 @@ This will create the 2 container images and push it to the IMAGE REPOSITORY.
 [!NOTE]
 add checking the IMAGE REPOSITORY list command to test it
 
-#### Create Application Package
+
+#### Create Application Package Using Snow CLI
+
+#### Create Application Package 
+
+
+To create an application package and create a version for it, execute the following make command:
+
+```bash
+snow_create
+```
+
+Occasionally, you might want to validate a setup script before deploying an application to avoid potential impacts that could occur if validation fails during the deployment process. The snow app validate command validates a setup script without needing to run or deploy an application. It uploads source files to a separate scratch stage that drops automatically after the command completes to avoid disturbing files in the application’s source stage.
+```bash
+make snow_validate
+```
+
+<!-- To create an application using a version (and patch) of an existing application package, execute the following make command:
+
+```bash
+make snow_app_run
+``` -->
+
+#### Setup for Testing on the Provider Side
+We can test our Native App on the Provider by mimicking what it would look like on the 
+Consumer side (a benefit/feature of the Snowflake Native App Framework).
+
+To do this, run below SQL commands . This will create the role, 
+virtual warehouse for install, database, schema,  VIEW of the TPC-H data, and 
+permissions necessary to configure the Native App. The ROLE you will use for this is `NAC`.
+
+```sql
+USE ROLE ACCOUNTADMIN;
+-- (Mock) Consumer role
+CREATE ROLE IF NOT EXISTS nac;
+GRANT ROLE nac TO ROLE ACCOUNTADMIN;
+CREATE WAREHOUSE IF NOT EXISTS wh_nac WITH WAREHOUSE_SIZE='XSMALL';
+GRANT USAGE ON WAREHOUSE wh_nac TO ROLE nac WITH GRANT OPTION;
+GRANT IMPORTED PRIVILEGES ON DATABASE snowflake_sample_data TO ROLE nac;
+GRANT CREATE DATABASE ON ACCOUNT TO ROLE nac;
+GRANT BIND SERVICE ENDPOINT ON ACCOUNT TO ROLE nac WITH GRANT OPTION;
+GRANT CREATE COMPUTE POOL ON ACCOUNT TO ROLE nac;
+
+USE ROLE nac;
+CREATE DATABASE IF NOT EXISTS nac_test;
+CREATE SCHEMA IF NOT EXISTS nac_test.data;
+USE SCHEMA nac_test.data;
+CREATE VIEW IF NOT EXISTS orders AS SELECT * FROM snowflake_sample_data.tpch_sf10.orders;
+```
+
+
+#### Testing on the Provider Side
+First, let's install the Native App.
+
+```sql
+-- For Provider-side Testing
+USE ROLE naspcs_role;
+GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_python_pkg TO ROLE nac;
+USE ROLE ACCOUNTADMIN;
+GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
+
+USE ROLE naspcs_role;
+
+
+-- FOLLOW THE consumer_setup.sql TO SET UP THE TEST ON THE PROVIDER
+USE ROLE nac;
+USE WAREHOUSE wh_nac;
+
+-- Create the APPLICATION
+DROP APPLICATION IF EXISTS na_spcs_app CASCADE;
+CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSION v2;
+```
+
+Next we need to configure the Native App. We can do this via Snowsight by
+visiting the Apps tab and clicking on our Native App `NA_SPCS_APP`.
+* Click the "Grant" button to grant the necessary privileges
+* Click the "Review" button to open the dialog to create the
+  necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
+  click "Connect".
+
+At this point, you should now see an "Activate" button in the top right.
+Click it to activate the app.
+
+Once it has successfully activated, the "Activate" button will be replaced
+with a "Launch app" button. Click the "Launch app" button to open the
+containerized web app in a new tab.
+
+At this point, you can also grant access to the ingress endpoint by granting
+the APPLICATION ROLE `app_user` to a normal user role. Users with that role can
+then visit the URL.
+
+If you need to get the URL via SQL, you can call a stored procedure 
+in the Native App, `app_public.app_url()`.
+
+```sql
+-- ????????????????????????????????????????
+GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE sandbox;
+-- Get the URL for the app
+CALL na_spcs_python_app.app_public.app_url();
+```
+
+
+
+
+
+
+
+
+# OLD
+
+#### Create Application Package - old
 
 Next, you need to upload the files in the `na_spcs_python` directory into the stage 
 `SPCS_APP.NAPP.APP_STAGE` in the folder `na_spcs_python`.
@@ -319,3 +432,7 @@ INSERT INTO na_spcs_python_pkg.shared_data.feature_flags
   SELECT parse_json('{"debug": ["GET_SERVICE_STATUS", "GET_SERVICE_LOGS"]}') AS flags,
          current_account() AS acct;
 ```
+
+
+
+
