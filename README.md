@@ -33,30 +33,20 @@ Make sure you are using the latest version of Snowflake CLI if you already have 
 https://docs.snowflake.com/en/release-notes/clients-drivers/snowflake-cli
 Make sure the default account is the provider account.
 
-
+### Docker
+Docker Desktop installed on your local machine
+https://www.docker.com/products/docker-desktop/?_fsi=Fv7QhES9&_fsi=Fv7QhES9
 
 
 
 ## Setup
 There are 2 parts to set up, the Provider and the Consumer.
 
-This example expects that both Provider and Consumer have been
-set up with the prerequisite steps to enable for Snowpark 
-Container Services, specifically:
-```
-USE ROLE ACCOUNTADMIN;
-CREATE SECURITY INTEGRATION IF NOT EXISTS snowservices_ingress_oauth
-  TYPE=oauth
-  OAUTH_CLIENT=snowservices_ingress
-  ENABLED=true;
-```
-
 ### Provider Setup
 
 #### Create Provider Objects
 
 For the Provider, we need to set up only a few things:
-* A STAGE to hold the files for the Native App
 * An IMAGE REPOSITORY to hold the image for the service image
 * An APPLICATION PACKAGE that defines the Native App
 
@@ -81,7 +71,6 @@ GRANT ALL ON WAREHOUSE wh_nap TO ROLE naspcs_role;
 USE ROLE naspcs_role;
 CREATE DATABASE IF NOT EXISTS spcs_app;
 CREATE SCHEMA IF NOT EXISTS spcs_app.napp;
--- CREATE STAGE IF NOT EXISTS spcs_app.napp.app_stage;
 CREATE IMAGE REPOSITORY IF NOT EXISTS spcs_app.napp.img_repo;
 SHOW IMAGE REPOSITORIES IN SCHEMA spcs_app.napp;
 ```
@@ -122,7 +111,7 @@ add checking the IMAGE REPOSITORY list command to test it
 To create an application package and create a version for it, execute the following make command:
 
 ```bash
-snow_create
+make snow_create
 ```
 
 Occasionally, you might want to validate a setup script before deploying an application to avoid potential impacts that could occur if validation fails during the deployment process. The snow app validate command validates a setup script without needing to run or deploy an application. It uploads source files to a separate scratch stage that drops automatically after the command completes to avoid disturbing files in the application’s source stage.
@@ -170,7 +159,7 @@ First, let's install the Native App.
 ```sql
 -- For Provider-side Testing
 USE ROLE naspcs_role;
-GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_python_pkg TO ROLE nac;
+GRANT INSTALL, DEVELOP ON APPLICATION PACKAGE na_spcs_pkg TO ROLE nac;
 USE ROLE ACCOUNTADMIN;
 GRANT CREATE APPLICATION ON ACCOUNT TO ROLE nac;
 
@@ -183,7 +172,7 @@ USE WAREHOUSE wh_nac;
 
 -- Create the APPLICATION
 DROP APPLICATION IF EXISTS na_spcs_app CASCADE;
-CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSION v2;
+CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSION v1;
 ```
 
 Next we need to configure the Native App. We can do this via Snowsight by
@@ -306,12 +295,15 @@ USE ROLE nac;
 USE WAREHOUSE wh_nac;
 
 -- Create the APPLICATION
-DROP APPLICATION IF EXISTS na_spcs_python_app CASCADE;
-CREATE APPLICATION na_spcs_python_app FROM APPLICATION PACKAGE na_spcs_python_pkg USING VERSION v2;
+DROP APPLICATION IF EXISTS na_spcs_app CASCADE;
+CREATE APPLICATION na_spcs_app FROM APPLICATION PACKAGE na_spcs_pkg USING VERSION v2;
 ```
 
 Next we need to configure the Native App. We can do this via Snowsight by
-visiting the Apps tab and clicking on our Native App `NA_SPCS_PYTHON_APP`.
+visiting the Apps tab and clicking on our Native App `NA_SPCS_APP`.
+![data apps](img/data-apps.png)
+
+
 * Click the "Grant" button to grant the necessary privileges
 * Click the "Review" button to open the dialog to create the
   necessary `EXTERNAL ACCESS INTEGRATION`. Review the dialog and
