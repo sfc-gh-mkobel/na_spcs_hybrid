@@ -21,6 +21,12 @@ $$;
 GRANT USAGE ON PROCEDURE app_public.app_url() TO APPLICATION ROLE app_admin;
 GRANT USAGE ON PROCEDURE app_public.app_url() TO APPLICATION ROLE app_user;
 
+
+  CREATE OR REPLACE SECURE VIEW app_public.ticker_data AS
+    SELECT * FROM shared_data.ticker_data;
+
+    GRANT SELECT ON VIEW app_public.ticker_data TO APPLICATION ROLE app_admin;
+    GRANT SELECT ON VIEW app_public.ticker_data TO APPLICATION ROLE app_user;
 -- Configuration and Callback functions 
 EXECUTE IMMEDIATE FROM 'config.sql';
 -- Support functions

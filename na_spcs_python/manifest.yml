@@ -31,12 +31,12 @@ lifecycle_callbacks:
   version_initializer: config.version_initializer
 
 references:
-  - ORDERS_TABLE:
-      label: "Orders table"
-      description: "Orders table in TPC-H samples"
+  - TICKER_TABLE:
+      label: "Ticker table"
+      description: "Hybrid table that contains the ticker data in your portfolio"
       privileges:
         - SELECT
-      object_type: VIEW
+      object_type: TABLE
       multi_valued: false
       register_callback: config.reference_callback
 
