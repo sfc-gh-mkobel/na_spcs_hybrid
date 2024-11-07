@@ -1,42 +1,40 @@
+<!-- App.vue -->
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-    <v-row>
-      <v-col cols="1">
-        <v-img src="https://upload.wikimedia.org/wikipedia/commons/f/ff/Snowflake_Logo.svg" 
-          contain :aspect-ratio="184/44" height="40"
-        ></v-img>
-      </v-col>
-      <v-col cols="10"  class="text-center">
-        <v-toolbar-title>Simple Clerks App</v-toolbar-title>    
-      </v-col>
-      <v-col cols="1"></v-col>
-    </v-row>
-
-  </v-app-bar>
-
-    <v-main>
-      <TopClerks/>
-    </v-main>
-  </v-app>
-</template>
-
-<script>
-import TopClerks from './components/TopClerks';
-
-export default {
-  name: 'App',
-
-  components: {
-    TopClerks,
-  },
-
-  data: () => ({
-    //
-  }),
-};
-</script>
+    <div id="app">
+      <header class="banner">
+        <h1>Snowflake Ticker Data</h1>
+      </header>
+      <main>
+        <LineChart />
+      </main>
+    </div>
+  </template>
+  
+  <script>
+  import LineChart from './components/LineChart.vue';
+  
+  export default {
+    name: 'App',
+    components: {
+      LineChart,
+    },
+  };
+  </script>
+  
+  <style scoped>
+  /* Banner styling */
+  .banner {
+    background-color: #add8e6; /* Light blue */
+    padding: 20px;
+    text-align: center;
+    color: #003366; /* Dark blue text for contrast */
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  main {
+    margin: 20px;
+  }
+  </style>
+  
