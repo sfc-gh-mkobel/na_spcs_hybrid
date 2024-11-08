@@ -63,10 +63,14 @@ CREATE OR REPLACE PROCEDURE config.configuration_callback(ref_name STRING)
     AS $$
     BEGIN
         CASE (ref_name)
-            WHEN 'EGRESS_EAI_WIKIPEDIA' THEN
-                -- Add EXTERNAL ACCESS INTEGRATION for upload.wikimedia.org
-                RETURN '{"type": "CONFIGURATION", "payload": { "host_ports": ["upload.wikimedia.org"], "allowed_secrets": "NONE" } }';
+            WHEN 'FONTS_EAI_GOOGLE' THEN
+                RETURN '{"type": "CONFIGURATION", "payload": { "host_ports": ["fonts.googleapis.com"], "allowed_secrets": "NONE" } }';
+            WHEN 'CSS_EAI' THEN
+                RETURN '{"type": "CONFIGURATION", "payload": { "host_ports": ["cdn.jsdelivr.net"], "allowed_secrets": "NONE" } }';
+            WHEN 'GSTATIC_EAI' THEN
+                RETURN '{"type": "CONFIGURATION", "payload": { "host_ports": ["fonts.gstatic.com"], "allowed_secrets": "NONE" } }';
         END;
+
         RETURN '{"type": "ERROR", "payload": "Unknown Reference"}';
     END;
     $$;
@@ -587,21 +591,32 @@ CREATE OR REPLACE PROCEDURE config.create_service_frontend()
         END IF;
 
         -- Check that BIND SERVICE ENDPOINT has been granted
-        -- Check that EGRESS_EAI_WIKIPEDIA reference has been set
+        -- Check that FONTS_EAI_GOOGLE reference has been set
         -- Check that ORDERS_TABLE reference has been set
         --     FOR NOW, don't check the ORDERS_TABLE, it can't be set at setup, 
         --       but this is the default_web_endpoint and MUST be created based
         --       solely on the permissions and references that can be granted at setup.
         -- CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
-        --                                     ARRAY_CONSTRUCT('ORDERS_TABLE', 'EGRESS_EAI_WIKIPEDIA')) INTO :b;
+        --                                     ARRAY_CONSTRUCT('ORDERS_TABLE', 'FONTS_EAI_GOOGLE')) INTO :b;
         SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: checking if we have all permissions and references');
         CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
-                                            ARRAY_CONSTRUCT('EGRESS_EAI_WIKIPEDIA')) INTO :b;
+                                            ARRAY_CONSTRUCT('FONTS_EAI_GOOGLE')) INTO :b;
         IF (NOT b) THEN
             SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: Insufficient permissions');
             RETURN false;
         END IF;
-
+        CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
+                                            ARRAY_CONSTRUCT('CSS_EAI')) INTO :b;
+        IF (NOT b) THEN
+            SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: Insufficient permissions');
+            RETURN false;
+        END IF;
+        CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
+                                            ARRAY_CONSTRUCT('GSTATIC_EAI')) INTO :b;
+        IF (NOT b) THEN
+            SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: Insufficient permissions');
+            RETURN false;
+        END IF;
         SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: starting service');
 
         -- FOR NOW, we need to do this as EXECUTE IMMEDIATE
@@ -609,13 +624,13 @@ CREATE OR REPLACE PROCEDURE config.create_service_frontend()
         -- CREATE SERVICE IF NOT EXISTS app_public.frontend
         --     IN COMPUTE POOL Identifier(:poolname)
         --     FROM SPECIFICATION_FILE='/frontend.yaml'
-        --     EXTERNAL_ACCESS_INTEGRATIONS=( Reference('EGRESS_EAI_WIKIPEDIA') )
+        --     EXTERNAL_ACCESS_INTEGRATIONS=( Reference('FONTS_EAI_GOOGLE') )
         --     QUERY_WAREHOUSE=Identifier(:whname)
         -- ;
         LET q STRING := 'CREATE SERVICE IF NOT EXISTS app_public.frontend
             IN COMPUTE POOL Identifier(''' || poolname || ''')
             FROM SPECIFICATION_FILE=''/frontend.yaml''
-            EXTERNAL_ACCESS_INTEGRATIONS=( Reference(''EGRESS_EAI_WIKIPEDIA'') )';
+            EXTERNAL_ACCESS_INTEGRATIONS=( Reference(''FONTS_EAI_GOOGLE''), REFERENCE(''CSS_EAI''), REFERENCE(''GSTATIC_EAI'') )';
         SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_frontend: Command: ' || q);
         EXECUTE IMMEDIATE q;
 
@@ -706,10 +721,10 @@ CREATE OR REPLACE PROCEDURE config.upgrade_service_frontend()
             EXECUTE IMMEDIATE 'ALTER SERVICE app_public.frontend FROM SPECIFICATION_FILE=''/frontend.yaml''';
 
             -- ALTER SERVICE app_public.frontend SET
-            --     EXTERNAL_ACCESS_INTEGRATIONS=( Reference('EGRESS_EAI_WIKIPEDIA') )
+            --     EXTERNAL_ACCESS_INTEGRATIONS=( Reference('FONTS_EAI_GOOGLE') )
             -- ;
             EXECUTE IMMEDIATE 'ALTER SERVICE app_public.frontend SET
-                EXTERNAL_ACCESS_INTEGRATIONS=( Reference(''EGRESS_EAI_WIKIPEDIA'') )';
+                EXTERNAL_ACCESS_INTEGRATIONS=( Reference(''FONTS_EAI_GOOGLE''), Reference(''CSS_EAI'') , REFERENCE(''GSTATIC_EAI''))';
 
             -- Resume the service (to pick up any initialization logic that might be 
             --   in the new container image)
@@ -754,21 +769,33 @@ CREATE OR REPLACE PROCEDURE config.create_service_backend()
         END IF;
 
         -- Check that BIND SERVICE ENDPOINT has been granted
-        -- Check that EGRESS_EAI_WIKIPEDIA reference has been set
+        -- Check that FONTS_EAI_GOOGLE reference has been set
         -- Check that ORDERS_TABLE reference has been set
         --     FOR NOW, don't check the ORDERS_TABLE, it can't be set at setup, 
         --       but this is the default_web_endpoint and MUST be created based
         --       solely on the permissions and references that can be granted at setup.
         -- CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
-        --                                     ARRAY_CONSTRUCT('ORDERS_TABLE', 'EGRESS_EAI_WIKIPEDIA')) INTO :b;
+        --                                     ARRAY_CONSTRUCT('ORDERS_TABLE', 'FONTS_EAI_GOOGLE')) INTO :b;
         SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_backend: checking if we have all permissions and references');
         CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
-                                            ARRAY_CONSTRUCT('EGRESS_EAI_WIKIPEDIA')) INTO :b;
+                                            ARRAY_CONSTRUCT('FONTS_EAI_GOOGLE')) INTO :b;
         IF (NOT b) THEN
             SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_backend: Insufficient permissions');
             RETURN false;
         END IF;
 
+      CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
+                                            ARRAY_CONSTRUCT('CSS_EAI')) INTO :b;
+        IF (NOT b) THEN
+            SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_backend: Insufficient permissions');
+            RETURN false;
+        END IF;
+      CALL config.permissions_and_references(ARRAY_CONSTRUCT('BIND SERVICE ENDPOINT'),
+                                            ARRAY_CONSTRUCT('GSTATIC_EAI')) INTO :b;
+        IF (NOT b) THEN
+            SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_backend: Insufficient permissions');
+            RETURN false;
+        END IF;
         SYSTEM$LOG_INFO('NA_SPCS_PYTHON: create_service_backend: starting service');
 
         -- FOR NOW, we need to do this as EXECUTE IMMEDIATE

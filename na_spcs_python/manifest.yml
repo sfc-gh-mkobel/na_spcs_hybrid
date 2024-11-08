@@ -40,9 +40,31 @@ references:
       multi_valued: false
       register_callback: config.reference_callback
 
-  - EGRESS_EAI_WIKIPEDIA:
-      label: "Egress External Access Integration for Wikipedia"
-      description: "EAI for Egress from NA+SPCS to Wikipedia"
+  - FONTS_EAI_GOOGLE:
+      label: "Egress External Access Integration for google fonts"
+      description: "EAI for Egress from NA+SPCS to google fonts"
+      privileges: 
+        - USAGE
+      object_type: EXTERNAL_ACCESS_INTEGRATION
+      multi_valued: false
+      register_callback: config.reference_callback
+      configuration_callback: config.configuration_callback
+      required_at_setup: true
+
+  - CSS_EAI:
+      label: "Egress External Access Integration for CSS"
+      description: "EAI for Egress from NA+SPCS to CSS"
+      privileges: 
+        - USAGE
+      object_type: EXTERNAL_ACCESS_INTEGRATION
+      multi_valued: false
+      register_callback: config.reference_callback
+      configuration_callback: config.configuration_callback
+      required_at_setup: true
+      
+  - GSTATIC_EAI:
+      label: "Egress External Access Integration for GSTATIC FONTS"
+      description: "EAI for Egress from NA+SPCS to GSTATIC"
       privileges: 
         - USAGE
       object_type: EXTERNAL_ACCESS_INTEGRATION
