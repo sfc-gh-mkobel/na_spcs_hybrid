@@ -1,26 +1,85 @@
-<!-- App.vue -->
 <template>
-    <div id="app">
-      <header class="banner">
-        <h1>Snowflake Ticker Data</h1>
-      </header>
-      <main>
-        <LineChart />
-      </main>
+    <div>
+      <label for="ticker-select">Select Ticker:</label>
+      <select v-model="selectedTicker">
+        <option v-for="ticker in tickers" :key="ticker" :value="ticker">{{ ticker }}</option>
+      </select>
+    </div>
+    <div>
+        <header class="banner">
+            <h1>Snowflake Stock Data</h1>
+        </header>
+      <!-- The v-if is used to conditionally render a block -->
+      <Line id="my-chart-id" v-if="loaded" :options="chartOptions" :data="chartData" :width="600" />
     </div>
   </template>
   
   <script>
-  import LineChart from './components/LineChart.vue';
+  import { Line } from 'vue-chartjs'
+  
+  import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+  
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+)
   
   export default {
-    name: 'App',
-    components: {
-      LineChart,
-    },
-  };
-  </script>
+    name: 'LineChart',
+    components: { Line },
+    data: () => ({
+      // Prevents chart to mount before the API data arrives
+      loaded: false,
+      selectedTicker: 'AMZN', // Default ticker
+      tickers: ['AAPL', 'MSFT', 'IBM', 'AMZN', 'FDS', 'META'], // List of ticker options
+      chartData: {
+        labels: [],
+        datasets: [
+          {
+            label: 'My Label',
+            data: [],
+            backgroundColor: '#f87979'
+          }
+        ]
+      },
+      chartOptions: {
+        responsive: true
+      }
+    }),
+     async mounted() {
+      const apiUrl = process.env.VUE_APP_API_URL
   
+      // Make an HTTP request to fetch the data from the API endpoint
+      await axios.get(apiUrl + "/ticks2",{params: {ticker: this.selectedTicker}})
+      //  .then((response) => response.json())
+        .then((r) => {
+          // Extract data from the API response and update the chartData
+       // this.chartData.labels = r.data.TICKER
+      //  this.chartData.datasets[0].data = r.data.LAST_PRICE
+  
+      this.chartData = {labels: r.data.DATE , datasets: [{data:r.data.AVG_PRICE, label: "avg_price", borderColor: 'rgb(75, 192, 192)', tension: 0.5, pointBorderColor: 'rgb(255,0,0)', pointBackgroundColor: 'rgb(255,0,0)', pointRadius: 10, spanGaps: true, pointHoverRadius: 20, pointStyle: 'rectRot'}
+                                ,{data: r.data.M_AVG, label: "Moving AVG", borderColor: 'rgb(0, 255, 0)', tension: 0.5, pointBorderColor: 'rgb(255,0,0)'}]}
+          // Allow the chart to display the data from the API endpoint
+  
+          this.loaded = true
+        }
+    )}
+    }
+  </script>
   <style scoped>
   /* Banner styling */
   .banner {
@@ -37,4 +96,3 @@
     margin: 20px;
   }
   </style>
-  

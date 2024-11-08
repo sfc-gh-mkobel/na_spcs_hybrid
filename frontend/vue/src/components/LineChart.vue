@@ -10,15 +10,15 @@
   </template>
   
   <script>
-  import { Line } from 'chart.js';
   import axios from 'axios';
-  
+  import { Line } from 'vue-chartjs';
+    
   export default {
     name: 'LineChart',
     data() {
       return {
         chart: null,            // Reference to the chart instance
-        selectedTicker: 'AAPL', // Default ticker
+        selectedTicker: 'AMZN', // Default ticker
         tickers: ['AAPL', 'MSFT', 'IBM', 'AMZN', 'FDS', 'META'], // List of ticker options
       };
     },

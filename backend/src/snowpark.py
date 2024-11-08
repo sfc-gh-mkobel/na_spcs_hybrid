@@ -62,17 +62,17 @@ def ticks():
 @snowpark.route('/ticks2')
 def ticks2():
     # Validate arguments
-    ticker_str = request.args.get('ticker') or '1995-01-01'
+    ticker_str = request.args.get('ticker') or 'AMZN'
     try:
-        ticker = str(ticker)
+        ticker = str(ticker_str)
     except:
         abort(400, "Invalid arguments.")
     try:
         dfRef = session.sql("SELECT * FROM REFERENCE('TICKER_TABLE')")
-        dfShared = session.sql("SELECT TICKER, DATE, LAST_PRICE FROM app_public.ticker_data")
+        dfShared = session.sql("SELECT TICKER, DATE, AVG_PRICE, M_AVG FROM app_public.ticker_data")
         dfReturn = dfShared \
                 .join(dfRef, "ticker") \
-                .select(dfShared.TICKER, dfShared.DATE, dfShared.LAST_PRICE) \
+                .select(dfShared.TICKER, dfShared.DATE, dfShared.AVG_PRICE, dfShared.M_AVG) \
                 .filter(dfShared.TICKER == ticker)
         return make_response(jsonify([x.as_dict() for x in dfReturn.to_local_iterator()]))
     except:
