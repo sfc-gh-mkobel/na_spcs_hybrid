@@ -37,7 +37,7 @@ Title,
 Tooltip,
 Legend
 )
-
+import axios from 'axios'
 export default {
   name: 'LineChart',
   components: { Line },
@@ -61,23 +61,47 @@ export default {
     }
   }),
    async mounted() {
-    //const apiUrl = process.env.VUE_APP_API_URL
+    
+    const apiUrl = process.env.VUE_APP_API_URL
+  
+  // Make an HTTP request to fetch the data from the API endpoint
+  await axios.get(apiUrl + "/ticks2",{params: {ticker: this.selectedTicker}})
+  
+    .then((r) => {
 
-    // Make an HTTP request to fetch the data from the API endpoint
-    //await fetch(apiUrl)
-    //  .then((response) => response.json())
-     // .then((r) => {
-        // Extract data from the API response and update the chartData
-     // this.chartData.labels = r.data.TICKER
-    //  this.chartData.datasets[0].data = r.data.LAST_PRICE
-
-    this.chartData = {labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'] , datasets: [{data:[40, 80, 100, 40, 39, 80, 40], label: "last_price", borderColor: 'rgb(75, 192, 192)', tension: 0.5, pointBorderColor: 'rgb(255,0,0)', pointBackgroundColor: 'rgb(255,0,0)', pointRadius: 10, spanGaps: true, pointHoverRadius: 20, pointStyle: 'rectRot'}
-                              ,{data:[4, 2, 1, 9, 3, 8, 4], label: "Moving AVG", borderColor: 'rgb(0, 255, 0)', tension: 0.5, pointBorderColor: 'rgb(255,0,0)'}]}
-        // Allow the chart to display the data from the API endpoint
-
+      const labels = r.map(item => new Date(item.DATE).toLocaleDateString());
+      const avgPrices = r.map(item => item.AVG_PRICE);
+      const movingAvg = r.map(item => item.M_AVG);
+      const ticker = r.map(item => item.TICKER);
+      this.chartData = {labels: labels, datasets: [
+        {data:avgPrices,
+          label: ticker[0],
+          borderColor: 'rgb(75, 192, 192)', 
+          tension: 0.5, 
+          pointBorderColor: 'rgb(255,0,0)', 
+          pointBackgroundColor: 'rgb(255,0,0)', 
+          pointRadius: 10, 
+          spanGaps: true, 
+          pointHoverRadius: 20, 
+          pointStyle: 'rectRot'
+        },
+        {data:movingAvg,
+          label: ticker[0],
+          borderColor: 'rgb(75, 192, 192)', 
+          tension: 0.5, 
+          pointBorderColor: 'rgb(0,255,0)', 
+          pointBackgroundColor: 'rgb(255,0,0)', 
+          pointRadius: 10, 
+          spanGaps: true, 
+          pointHoverRadius: 20, 
+          pointStyle: 'rectRot'
+        }
+      ]}})
         this.loaded = true
+    
       }
   }
+
 </script>
 <style scoped>
 /* Banner styling */
