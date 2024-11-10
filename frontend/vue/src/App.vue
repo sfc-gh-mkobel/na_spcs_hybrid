@@ -8,27 +8,31 @@
       <v-row>
         <v-col cols="1">
         </v-col>
-        <v-col cols="10"  class="text-center">   
+        <v-col cols="10"  class="text-center">
+               
         </v-col>
-        <v-col cols="1"></v-col>
+        <v-col cols="10"></v-col>
       </v-row>
   
     </v-app-bar>
   
-      <v-main>
-        <TopClerks/>
+    <v-main>
+        <v-container fluid>
+            <LineChart/>
+    </v-container>
       </v-main>
     </v-app>
   </template>
   
   <script>
-  import TopClerks from './components/line.vue';
+  import LineChart from './components/line.vue';
   
   export default {
     name: 'App',
   
     components: {
-      TopClerks,
+      LineChart
+      
     },
   
     data: () => ({

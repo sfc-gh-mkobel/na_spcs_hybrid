@@ -9,6 +9,10 @@ app.register_blueprint(snowpark, url_prefix='/snowpark')
 def default():
     return make_response(jsonify(result='Nothing to see here'))
 
+@app.route("/aalter")
+def aalter():
+    return make_response(jsonify(result='This is a nightmare'))
+
 @app.errorhandler(404)
 def resource_not_found(e):
     return make_response(jsonify(error='Not found!'), 404)
@@ -16,3 +20,5 @@ def resource_not_found(e):
 if __name__ == '__main__':
     api_port=int(os.getenv('API_PORT') or 8081)
     app.run(port=api_port, host='0.0.0.0')
+
+

@@ -10,6 +10,18 @@ snowpark = Blueprint('snowpark', __name__)
 
 dateformat = '%Y-%m-%d'
 
+
+def _build_cors_preflight_response():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+def _corsify_actual_response(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
+
 ## Top clerks in date range
 @snowpark.route('/top_clerks')
 def top_clerks():
@@ -77,4 +89,20 @@ def ticks2():
         return make_response(jsonify([x.as_dict() for x in dfReturn.to_local_iterator()]))
     except:
         abort(500, "Made a mess of the statement. Check the logs for details.")
-        
+    
+@snowpark.route('/test', methods=["GET", "OPTIONS"])
+def test():
+        if request.method == "OPTIONS":
+            return _build_cors_preflight_response()
+        elif request.method == "GET": # The actual request following the preflight
+            df = session.sql("SELECT AVG_PRICE, DATE , TICKER, M_AVG FROM TICKER_DATA")
+            return _corsify_actual_response(make_response(jsonify([x.as_dict() for x in df.to_local_iterator()])))
+        else:
+            raise RuntimeError("Weird - don't know how to handle method {}".format(request.method))
+
+@snowpark.route('/test2')
+def test2():
+    try:
+        return make_response(jsonify(result='This is test2 correct'))
+    except:
+        return make_response(jsonify(result='This is test2 wrong'))
