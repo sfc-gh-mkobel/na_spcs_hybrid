@@ -68,7 +68,7 @@ export default {
     const apiUrl = "/api/snowpark" //process.env.VUE_APP_API_URL
   
   // Make an HTTP request to fetch the data from the API endpoint
-  await axios.get(apiUrl + "/ticks2",{params: {ticker: this.selectedTicker}})
+  await axios.get(apiUrl + "/ticks",{params: {ticker: this.selectedTicker}})
   
     .then((r) => {
 
@@ -84,25 +84,25 @@ export default {
       console.log(movingAvg);
       const ticker = r.data.map(item => item.TICKER);
       console.log(ticker);
-      this.chartData = {labels: labels, datasets: [
+      this.chartData = {labels: labels,Legend: ticker[0], datasets: [
         {data:avgPrices,
-          label: ticker[0],
-          borderColor: 'rgb(75, 192, 192)', 
+          label: "Averge Price",
+          borderColor: 'rgb(255, 0, 0)', 
           tension: 0.5, 
           pointBorderColor: 'rgb(255,0,0)', 
           pointBackgroundColor: 'rgb(255,0,0)', 
-          pointRadius: 10, 
+          pointRadius: 2, 
           spanGaps: true, 
           pointHoverRadius: 20, 
           pointStyle: 'rectRot'
         },
         {data:movingAvg,
-          label: ticker[0],
-          borderColor: 'rgb(75, 192, 192)', 
-          tension: 0.5, 
+          label: "Moving Average",
+          borderColor: 'rgb(0, 255, 0)', 
+          tension: 1.0, 
           pointBorderColor: 'rgb(0,255,0)', 
-          pointBackgroundColor: 'rgb(255,0,0)', 
-          pointRadius: 10, 
+          pointBackgroundColor: 'rgb(0,255,0)', 
+          pointRadius: 2, 
           spanGaps: true, 
           pointHoverRadius: 20, 
           pointStyle: 'rectRot'
