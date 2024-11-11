@@ -97,9 +97,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="item in clerk_data"
-                >
+                <tr v-for="item in clerk_data"  :key="item.O_CLERK">
                   <td>{{ item.TICKER }}</td>
                   <td>{{ item.DATE }}</td>
                   <td>{{ item.LAST_PRICE }}</td>
