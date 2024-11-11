@@ -1,10 +1,10 @@
 <template>
+<div>
   <v-app>
     <v-app-bar
       app
       color="primary"
-      dark
-    >
+      dark>
     <v-row>
       <v-col cols="1">
         <v-img src="https://upload.wikimedia.org/wikipedia/commons/f/ff/Snowflake_Logo.svg" 
@@ -20,19 +20,24 @@
   </v-app-bar>
 
     <v-main>
-      <TopClerks/>
+      <!-- <TopClerks /> -->
+      <LineChart/>
+
     </v-main>
   </v-app>
+</div>
 </template>
 
 <script>
-import TopClerks from './components/TopClerks';
+// import TopClerks from './components/TopClerks';
+import LineChart from './components/LineChart';
 
 export default {
   name: 'App',
 
   components: {
-    TopClerks,
+    // TopClerks,
+    LineChart,
   },
 
   data: () => ({
