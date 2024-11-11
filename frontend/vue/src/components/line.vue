@@ -44,6 +44,9 @@ export default {
   data: () => ({
     // Prevents chart to mount before the API data arrives
     loaded: false,
+    isError: false,
+    noerror: false,
+    message: 'loading',
     selectedTicker: 'AMZN', // Default ticker
     tickers: ['AAPL', 'MSFT', 'IBM', 'AMZN', 'FDS', 'META'], // List of ticker options
     chartData: {
@@ -62,17 +65,25 @@ export default {
   }),
    async mounted() {
     
-    const apiUrl = process.env.VUE_APP_API_URL
+    const apiUrl = "/api/snowpark" //process.env.VUE_APP_API_URL
   
   // Make an HTTP request to fetch the data from the API endpoint
   await axios.get(apiUrl + "/ticks2",{params: {ticker: this.selectedTicker}})
   
     .then((r) => {
 
+
+      console.log(r.data)
+      this.noerror = true 
+      this.message = 'enabled' 
       const labels = r.map(item => new Date(item.DATE).toLocaleDateString());
+      console.log(labels);
       const avgPrices = r.map(item => item.AVG_PRICE);
+      console.log(avgPrices);
       const movingAvg = r.map(item => item.M_AVG);
+      console.log(movingAvg);
       const ticker = r.map(item => item.TICKER);
+      console.log(ticker);
       this.chartData = {labels: labels, datasets: [
         {data:avgPrices,
           label: ticker[0],
@@ -96,8 +107,19 @@ export default {
           pointHoverRadius: 20, 
           pointStyle: 'rectRot'
         }
-      ]}})
-        this.loaded = true
+      ]}
+
+      console.log("We are out of the axios block")
+      this.loaded = true
+    })
+    .catch((error) => { 
+               if (error) {
+                   console.log(error)
+                   this.isError = true
+                   this.message = 'disabled'
+               }  
+          })
+        
     
       }
   }
