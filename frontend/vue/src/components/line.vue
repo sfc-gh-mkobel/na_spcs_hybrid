@@ -76,13 +76,13 @@ export default {
       console.log(r.data)
       this.noerror = true 
       this.message = 'enabled' 
-      const labels = r.map(item => new Date(item.DATE).toLocaleDateString());
+      const labels = r.data.map(item => new Date(item.DATE).toLocaleDateString());
       console.log(labels);
-      const avgPrices = r.map(item => item.AVG_PRICE);
+      const avgPrices = r.data.map(item => item.AVG_PRICE);
       console.log(avgPrices);
-      const movingAvg = r.map(item => item.M_AVG);
+      const movingAvg = r.data.map(item => item.M_AVG);
       console.log(movingAvg);
-      const ticker = r.map(item => item.TICKER);
+      const ticker = r.data.map(item => item.TICKER);
       console.log(ticker);
       this.chartData = {labels: labels, datasets: [
         {data:avgPrices,
