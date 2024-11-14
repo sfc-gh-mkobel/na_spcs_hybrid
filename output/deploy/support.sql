@@ -1,1 +1,0 @@
-/Users/mkobel/workspaces/na_spcs_hybrid/na_spcs_python/support.sql
