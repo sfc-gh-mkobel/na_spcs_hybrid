@@ -222,6 +222,27 @@ GRANT APPLICATION ROLE na_spcs_python_app.app_user TO ROLE <insert role here>;
 -- Get the URL for the app
 CALL na_spcs_python_app.app_public.app_url();
 ```
+##### Monitoring App Run
+
+
+```sql
+SELECT
+  TIMESTAMP as time,
+  RESOURCE_ATTRIBUTES['snow.executable.name'] as executable,
+  RECORD['severity_text'] as severity,
+  VALUE as message
+FROM
+  "EVENT_DB"."DATA"."EVENT_TABLE"
+WHERE RESOURCE_ATTRIBUTES['snow.application.name'] = 'NA_SPCS_APP' order by time desc;
+
+
+call NA_SPCS_APP.app_public.app_url();
+call NA_SPCS_APP.support.get_service_status('APP_PUBLIC.BACKEND');
+call NA_SPCS_APP.support.get_service_status('APP_PUBLIC.FRONTEND');
+call NA_SPCS_APP.support.get_service_logs('APP_PUBLIC.FRONTEND',0,'eap-frontend',1000);
+call NA_SPCS_APP.support.get_service_logs('APP_PUBLIC.FRONTEND',0,'eap-router',1000);
+```
+
 
 ##### Cleanup
 To clean up the Native App test install, you can just `DROP` it:
